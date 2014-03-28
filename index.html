@@ -1,0 +1,234 @@
+<html>
+<title>Control my lights!</title>
+<head>
+	<script src="js/svg.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/jquery-1.11.0.js" type="text/javascript" charset="utf-8"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.draggable.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.clock.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.import.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.filter.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.export.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.easing.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.shapes.js"></script>
+	<script type='text/javascript' src="http://66.57.76.177/control/js/svg.topath.js"></script>
+<script language="JavaScript" src="http://j.maxmind.com/app/geoip.js"></script>
+	<script type='text/javascript'>//<![CDATA[ 
+window.onload=updateWindow;
+window.onresize=updateWindow;
+$(document).ready(updateWindow);
+
+// Websocket
+var sock = null;
+var wsuri = "ws://66.57.76.177:9002/ws";
+
+var draw = null;
+var i = 0
+// Lights
+var numLights = 4;
+var light = new Array()
+var lightBulb = new Array()
+var lightPosition = [[1010,850,0.05,0.05,0.63,0.844]
+					,[151,484,0.03,0.05,0.52,0.144]
+					,[151,247,0.03,0.04,0.755,0.63]
+					,[151,247,0.03,0.04,0.695,0.82]];
+var lightBulbPosition = [[561,523,0.1,0.1,0.625,.81]
+						,[561,523,0.1,0.1,0.49,0.11]
+						,[561,523,0.1,0.1,0.722,0.6]
+						,[561,523,0.1,0.1,0.662,0.79]];
+
+var lightState = new Array(numLights)
+for (i=0; i<numLights; i++) {
+	lightState[i] = 0;
+}
+
+// Motion sensors
+var numMotionSensors = 4;
+var motionSensor = new Array(numMotionSensors)
+var motionSensorPosition = [[48,48,0.1,0.1,0.655,0.74]  // office
+			,[48,48,0.1,0.1,0.435,0.12]    // piano    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.21,0.17]  // kitchen   // original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.28,0.5]]; //  entry   original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+var motionState = new Array(numMotionSensors)
+for (i=0; i<numMotionSensors; i++) {
+	motionState[i] = 0;
+}
+
+var roomPosition = [800,722];
+var title;
+
+
+function send() {
+	var msg = document.getElementById('message').value;
+	sock.send(msg);
+ };
+ 
+ function sendMessage(msg) {
+	sock.send(msg);
+ };
+ 
+
+function updateWindow(){
+
+sock = new WebSocket(wsuri);
+
+sock.onopen = function() {
+   console.log("connected to " + wsuri);
+  sock.send('state')
+}
+
+sock.onclose = function(e) {
+   console.log("connection closed (" + e.code + ")");
+}
+
+sock.onmessage = function(e) {
+	// every message should be the current state if prefaced by "web"
+   console.log("message received: " + e.data);
+   
+   // data comes in like this: web0:0:0
+   isweb = (e.data).split("|")
+   console.log(isweb)
+   if (isweb[0].indexOf("web") != -1) {
+		sensors = isweb[1].split(":")
+		for (i=0; i<numMotionSensors; i++) {
+			if (sensors[i].indexOf("1") != -1) {
+				motionSensor[i].show()
+				motionState[i] = 1;
+			} else {
+				motionSensor[i].show()
+				motionState[i] = 0;
+			}
+		}
+		for (i=0; i<numLights; i++) {
+			if (sensors[i+numMotionSensors].indexOf("1") != -1) {
+				light[i] = 1;
+				lightBulb[i].show()
+			} else {
+				lightBulb[i].hide()
+				light[i] = 0;
+			}
+		}
+		title.text('last input from: ' + sensors[numMotionSensors+numLights])
+   } else {
+
+   }
+}
+
+//}
+
+//function redrawSVG() {
+
+$("#drawing").html("");
+/* create an svg drawing */
+var draw = SVG('drawing')
+
+/* draw room */
+var room = draw.image('images/lay2-01.svg').move(0,0).loaded(function(loader) {
+  this.size(loader.width, loader.height)
+  roomPosition[0] = loader.width;
+  roomPosition[1] = loader.height;
+})
+room.transform({
+	scaleX: $(window).width()/roomPosition[0]
+,	scaleY: $(window).height()/roomPosition[1]
+})
+
+
+
+/* draw lamps and lightbulbs*/
+for (i=0; i<numLights; i++) {
+	/* lighbulb first*/
+	lightBulb[i] = draw.image('images/Yellow_Burst_Flower.svg')
+	.transform({
+			scaleX: $(window).width()*lightBulbPosition[i][2]/lightBulbPosition[i][0]
+	,       scaleY: $(window).height()*lightBulbPosition[i][3]/lightBulbPosition[i][1]
+	}).attr({
+	 'fill-opacity': 0.7
+	}).move($(window).width()*lightBulbPosition[i][4],$(window).height()*lightBulbPosition[i][5]).opacity(0.6)
+
+	var lampType = 'images/sheikh_tuhin_table-lamp.svg';
+	if (i==0) {
+		lampType = 'images/usiiik_Photorealistic_Red_Lamp.svg'
+	} 
+	if (i==1) {
+		lampType = 'images/shawn_rutledge-floor_lamp.svg'
+	}
+	/* lamp */
+	light[i] = draw.image(lampType)
+	light[i].transform({
+			scaleX: $(window).width()*lightPosition[i][2]/lightPosition[i][0]
+	,       scaleY: $(window).height()*lightPosition[i][3]/lightPosition[i][1]
+	})
+	light[i].move($(window).width()*lightPosition[i][4],$(window).height()*lightPosition[i][5])
+	light[i].show()
+
+}
+
+
+/* draw motion sensors */
+for (var i=0; i<numMotionSensors; i++) {
+	console.log(i)
+	motionSensor[i] = draw.image('images/graingert_Wireless_Logo.svg')
+	.transform({
+			scaleX: $(window).width()*motionSensorPosition[i][2]/motionSensorPosition[i][0]
+	,       scaleY: $(window).height()*motionSensorPosition[i][3]/motionSensorPosition[i][1]
+	})
+	.move($(window).width()*motionSensorPosition[i][4],$(window).height()*motionSensorPosition[i][5]).opacity(0.6).show()
+}
+
+
+light[0].click(function() {
+	sock.send('com|0:1:0:0:0:'+geoip_city() + ', '+geoip_region_name())
+})
+light[1].click(function() {
+	sock.send('com|0:0:1:0:0:'+geoip_city() + ', '+geoip_region_name())
+})
+light[2].click(function() {
+	sock.send('com|0:0:0:1:0:'+geoip_city() + ', '+geoip_region_name())
+})
+light[3].click(function() {
+	sock.send('com|0:0:0:0:1:'+geoip_city() + ', '+geoip_region_name())
+})
+
+
+for (i=0; i<numLights; i++) {
+	if (lightState[i]==0) {
+		lightBulb[i].hide()
+	} else {
+		lightBulb[i].show()	
+	}
+}
+
+for (i=0; i<numMotionSensors; i++) {
+	if (motionState[i]==0) {
+		motionSensor[i].show()
+	} else {
+		motionSensor[i].show()	
+	}
+}
+
+
+
+/* write text at the back */
+var title = draw.text('command center')
+    .back()
+    .fill('#ccc')
+    .move('50%', '40%')
+    .font({
+        family: 'Source Sans Pro'
+      , size: 18
+      , anchor: 'middle'
+    })
+
+/* create clock */
+draw.clock('15%').back().move('80%', '75%').start()
+}
+</script>
+
+</head>
+
+<body>
+<div id="drawing"></div>
+
+</body>
+
+</html>

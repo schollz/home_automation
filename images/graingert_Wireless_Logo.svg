@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:svg="http://www.w3.org/2000/svg" id="svg2818" viewBox="0 0 48 48" version="1.1">
+  <g id="layer1">
+    <path id="path2828" d="m23.625 24.375-5.7189 20.111h11.719l-6-20.111z" fill="#0000b3"/>
+    <path id="path5067" d="m11.38 28.495c-1.9338-1.934-3.13-4.606-3.13-7.557 0-5.903 4.785-10.688 10.688-10.688 5.9025 0 10.688 4.785 10.688 10.688 0 2.9513-1.1962 5.6231-3.1303 7.5572m-15.114 0" stroke="#0000b3" fill="none" transform="translate(4.75,4)"/>
+    <path id="path5071" d="m6.1292 19.746c-1.0066-1.007-1.6292-2.397-1.6292-3.934 0-3.072 2.4904-5.562 5.562-5.562 3.0721 0 5.5625 2.4904 5.5625 5.5625 0 1.536-0.6226 2.9267-1.6292 3.9333m-7.8666 0" stroke="#0000b3" fill="none" transform="translate(13.625,9.625)"/>
+  </g>
+  <metadata>
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <cc:license rdf:resource="http://creativecommons.org/licenses/publicdomain/"/>
+        <dc:publisher>
+          <cc:Agent rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title>Wireless Logo</dc:title>
+        <dc:date>2010-01-16T21:55:12</dc:date>
+        <dc:description>A wireless aerial indicator icon</dc:description>
+        <dc:source>http://openclipart.org/detail/28928/wireless-logo-by-graingert</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>graingert</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>aerial</rdf:li>
+            <rdf:li>clip art</rdf:li>
+            <rdf:li>clipart</rdf:li>
+            <rdf:li>image</rdf:li>
+            <rdf:li>media</rdf:li>
+            <rdf:li>network</rdf:li>
+            <rdf:li>public domain</rdf:li>
+            <rdf:li>router</rdf:li>
+            <rdf:li>sown</rdf:li>
+            <rdf:li>svg</rdf:li>
+            <rdf:li>unchecked</rdf:li>
+            <rdf:li>wifi</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License rdf:about="http://creativecommons.org/licenses/publicdomain/">
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Reproduction"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Distribution"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#DerivativeWorks"/>
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>
