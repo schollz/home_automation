@@ -40,6 +40,10 @@ var lightState = new Array(numLights)
 for (i=0; i<numLights; i++) {
 	lightState[i] = 0;
 }
+var lightSwitch = new Array(numLights)
+for (i=0; i<numLights; i++) {
+	lightSwitch[i] = 0;
+}
 
 // Motion sensors
 var numMotionSensors = 4;
@@ -56,6 +60,20 @@ for (i=0; i<numMotionSensors; i++) {
 var roomPosition = [800,722];
 var title;
 
+function sendState() {
+	var sendString = "com|"
+	for (i=0; i<numMotionSensors; i++) {
+		sendString = sendString.concat(motionState[i] + ':');
+	}
+	sendString = sendString.concat('|')
+	for (i=0; i<numLights; i++) {
+		sendString = sendString.concat(lightSwitch[i] + ':');
+		lightSwitch[i] = 0;
+	}
+	sendString = sendString.concat('|' + geoip_city() + ', '+geoip_region_name())
+	console.log(sendString)
+	sock.send(sendString)
+}
 
 function send() {
 	var msg = document.getElementById('message').value;
@@ -94,12 +112,13 @@ sock.onmessage = function(e) {
 				motionSensor[i].show()
 				motionState[i] = 1;
 			} else {
-				motionSensor[i].show()
+				motionSensor[i].hide()
 				motionState[i] = 0;
 			}
 		}
+		sensors = isweb[2].split(":")
 		for (i=0; i<numLights; i++) {
-			if (sensors[i+numMotionSensors].indexOf("1") != -1) {
+			if (sensors[i].indexOf("1") != -1) {
 				light[i] = 1;
 				lightBulb[i].show()
 			} else {
@@ -107,7 +126,7 @@ sock.onmessage = function(e) {
 				light[i] = 0;
 			}
 		}
-		title.text('last input from: ' + sensors[numMotionSensors+numLights])
+		title.text('last input from: ' + isweb[3])
    } else {
 
    }
@@ -132,6 +151,17 @@ room.transform({
 ,	scaleY: $(window).height()/roomPosition[1]
 })
 
+
+/* draw motion sensors */
+for (var i=0; i<numMotionSensors; i++) {
+	console.log(i)
+	motionSensor[i] = draw.image('images/graingert_Wireless_Logo.svg')
+	.transform({
+			scaleX: $(window).width()*motionSensorPosition[i][2]/motionSensorPosition[i][0]
+	,       scaleY: $(window).height()*motionSensorPosition[i][3]/motionSensorPosition[i][1]
+	})
+	.move($(window).width()*motionSensorPosition[i][4],$(window).height()*motionSensorPosition[i][5]).opacity(0.6).show()
+}
 
 
 /* draw lamps and lightbulbs*/
@@ -164,29 +194,38 @@ for (i=0; i<numLights; i++) {
 }
 
 
-/* draw motion sensors */
-for (var i=0; i<numMotionSensors; i++) {
-	console.log(i)
-	motionSensor[i] = draw.image('images/graingert_Wireless_Logo.svg')
-	.transform({
-			scaleX: $(window).width()*motionSensorPosition[i][2]/motionSensorPosition[i][0]
-	,       scaleY: $(window).height()*motionSensorPosition[i][3]/motionSensorPosition[i][1]
-	})
-	.move($(window).width()*motionSensorPosition[i][4],$(window).height()*motionSensorPosition[i][5]).opacity(0.6).show()
-}
-
 
 light[0].click(function() {
-	sock.send('com|0:1:0:0:0:'+geoip_city() + ', '+geoip_region_name())
+	for (i=0; i<numLights; i++) {
+		lightSwitch[i] = 0;
+	}
+	lightSwitch[0] = 1;
+	sendState();
 })
 light[1].click(function() {
-	sock.send('com|0:0:1:0:0:'+geoip_city() + ', '+geoip_region_name())
+	for (i=0; i<numLights; i++) {
+		lightSwitch[i] = 0;
+	}
+	lightSwitch[1] = 1;
+
+	sendState();
 })
 light[2].click(function() {
-	sock.send('com|0:0:0:1:0:'+geoip_city() + ', '+geoip_region_name())
+	for (i=0; i<numLights; i++) {
+		lightSwitch[i] = 0;
+	}
+	lightSwitch[2] = 1;
+
+	sendState();
 })
 light[3].click(function() {
-	sock.send('com|0:0:0:0:1:'+geoip_city() + ', '+geoip_region_name())
+	for (i=0; i<numLights; i++) {
+		lightSwitch[i] = 0;
+	}
+	lightSwitch[3] = 1;
+
+
+	sendState();
 })
 
 
@@ -200,7 +239,7 @@ for (i=0; i<numLights; i++) {
 
 for (i=0; i<numMotionSensors; i++) {
 	if (motionState[i]==0) {
-		motionSensor[i].show()
+		motionSensor[i].hide()
 	} else {
 		motionSensor[i].show()	
 	}

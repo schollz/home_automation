@@ -3,13 +3,44 @@ import time
 from websocket import create_connection
 import thread
 import os
+import socket
+from sys import exit , stdout , stdin
 
 numLights = 4;
-numMotionSensors = 1;
+numMotionSensors = 4;
 lightState = [0]*numLights
 motionState = [0]*numMotionSensors
 lightRFCodes = ['a1','b1','d1','c1']
 place = "command center"
+
+
+status = 0
+ 
+def getNetcatMessages():
+	global s
+	global lightState, motionState, place, ws
+	run = 0
+	while status == 0 :
+		if run == 0 :
+			socket.setdefaulttimeout(5)
+			run += 1
+		msg = s.recv(1024)
+		if msg != "" :
+			print msg.rstrip()
+			motionState = [0]*numMotionSensors
+			if "On" in msg:
+				if "E5" in msg:
+					motionState[0]=1
+				if "G5" in msg:
+					motionState[1]=1
+				if "B5" in msg:
+					motionState[2]=1
+			if "MS10" in msg:
+				motionState[3]=1
+			sendState()
+			
+			
+
 def getMessages():
 	global lightState, motionState, place, ws
 	while 1:
@@ -19,11 +50,19 @@ def getMessages():
 		if "state" in result:
 			sendState()
 		if "com" in res[0]:
+
+			# get motion click
 			sensors = res[1].split(":")
+			for i in range(0,numMotionSensors):
+				if "1" in sensors[i]: #switch the light if 1
+					motionState[i] = 1
+				else:
+					motionState[i] = 0
 			
 			# get light click
-			for i in range(numMotionSensors,numLights+numMotionSensors):
-				lightID=i-numMotionSensors
+			sensors = res[2].split(":")
+			for i in range(0,numLights):
+				lightID=i
 				if "1" in sensors[i]: #switch the light if 1
 					if lightState[lightID] == 0:
 						os.system("echo 'rf " + lightRFCodes[lightID] + " on' | nc localhost 1099")
@@ -31,12 +70,9 @@ def getMessages():
 					else:
 						os.system("echo 'rf " + lightRFCodes[lightID] + " off' | nc localhost 1099")
 						lightState[lightID]=0
-					
+
 			# get place
-			if "," in sensors[numMotionSensors+numLights]:
-				place = sensors[numMotionSensors+numLights]
-			else:
-				place = "unknown"
+			place = res[3]
 			sendState()
 			
 					
@@ -47,8 +83,10 @@ def sendState():
 	msg = "web|"
 	for motion in motionState:
 		msg += str(motion) + ":"
+	msg += "|"
 	for light in lightState:
 		msg += str(light) + ":"
+	msg += "|"
 	msg += place
 	ws.send(msg)
 
@@ -59,24 +97,38 @@ def ReadGpio(pin) :
     data = str.replace(data, "\n", "")
     return "1" in data
 
+	
+	
 motionState[0] = 0
+
+# setup netcat
+try:
+	nchost = 'localhost'
+	ncport = 1099
+	nchost = socket.gethostbyname(nchost)
+except socket.gaierror or socket.herror:
+	pass
+
+# connect to netcat
+try:
+	s = socket.socket(socket.AF_INET , socket.SOCK_STREAM)
+	print "Connecting to netcat..."
+	s.connect((nchost,ncport))
+	print "Connected to " + nchost + " for netcat."
+	try:
+		thread.start_new_thread(getNetcatMessages,())
+	except Exception , e:
+		print str(e)
+		status = 1
+		exit()  
+except Exception , e:
+	print str(e)
+	status = 1
+	exit()
+
+# setup server connections
 ws = create_connection("ws://66.57.76.177:9002/ws")
 thread.start_new_thread(getMessages,())
 while 1:
-	pinActive = ReadGpio("22")
-	if pinActive and not motionState[0]:
-		if lightState[0] == 0:
-			os.system("echo 'rf " + lightRFCodes[0] + " on' | nc localhost 1099")
-			lightState[0]=1
-		if lightState[3] == 0:
-			os.system("echo 'rf " + lightRFCodes[3] + " on' | nc localhost 1099")
-			lightState[3]=1
-		print "motion active"
-		motionState[0] = 1
-		sendState()
-	if not pinActive and motionState[0]:
-		print "motion stopped"
-		motionState[0] = 0
-		sendState()
 	time.sleep(0.05)
 ws.close()
