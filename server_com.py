@@ -5,20 +5,27 @@ import thread
 import os
 import socket
 from sys import exit , stdout , stdin
+import serial
+import datetime
 
-numLights = 4;
-numMotionSensors = 4;
+numLights = 5;
+numMotionSensors = 6;
 lightState = [0]*numLights
 motionState = [0]*numMotionSensors
-lightRFCodes = ['a1','b1','d1','c1']
+motionTime = [time.time()]*numMotionSensors
+motionSensorPositionsX = [0.45,0.54,0.21,0.28,0.655,0.435];
+motionSensorPositionsY = [0.55,0.49,0.17,0.5,0.74,0.12];
+lightTimes = [time.time()]*numLights
+lightRFCodes = ['a1','b1','d1','c1','g1']
 place = "command center"
+temperature = 0
 
 
 status = 0
  
 def getNetcatMessages():
 	global s
-	global lightState, motionState, place, ws
+	global motionState, motionTime, lightTimes, lightState, temperature, place, ws
 	run = 0
 	while status == 0 :
 		if run == 0 :
@@ -27,22 +34,33 @@ def getNetcatMessages():
 		msg = s.recv(1024)
 		if msg != "" :
 			print msg.rstrip()
-			motionState = [0]*numMotionSensors
 			if "On" in msg:
 				if "E5" in msg:
 					motionState[0]=1
+					motionTime[0]=time.time()
+				else:
+					motionState[0]=0
 				if "G5" in msg:
 					motionState[1]=1
+					motionTime[1]=time.time()
+				else:
+					motionState[1]=0
 				if "B5" in msg:
 					motionState[2]=1
+					motionTime[2]=time.time()
+				else:
+					motionState[2]=0
 			if "MS10" in msg:
 				motionState[3]=1
+				motionTime[3]=time.time()
+			else:
+				motionState[3]=0
 			sendState()
 			
 			
 
 def getMessages():
-	global lightState, motionState, place, ws
+	global motionState, motionTime, lightTimes, lightState, temperature, place, ws
 	while 1:
 		result = ws.recv()
 		print result
@@ -67,6 +85,7 @@ def getMessages():
 					if lightState[lightID] == 0:
 						os.system("echo 'rf " + lightRFCodes[lightID] + " on' | nc localhost 1099")
 						lightState[lightID]=1
+						lightTimes[i] = time.time()
 					else:
 						os.system("echo 'rf " + lightRFCodes[lightID] + " off' | nc localhost 1099")
 						lightState[lightID]=0
@@ -78,8 +97,9 @@ def getMessages():
 					
 		
 def sendState():
-	global lightState, motionState, place, ws
-	
+	global place, ws
+	global motionState, motionTime, lightTimes, lightState, temperature
+
 	msg = "web|"
 	for motion in motionState:
 		msg += str(motion) + ":"
@@ -88,7 +108,16 @@ def sendState():
 		msg += str(light) + ":"
 	msg += "|"
 	msg += place
+	msg += "|"
+	msg += str(temperature)
+	
 	ws.send(msg)
+	
+	for i in range(0,numMotionSensors):
+		if motionState[i]==1:
+			stringToWrite =  str(int(unix_time_millis(datetime.datetime.now()))) + "\t" + str(motionSensorPositionsX[i]) + "\t" + str(motionSensorPositionsY[i]) + "\n"
+			with open("motion_sensors.log","a") as myfile:
+				myfile.write(stringToWrite)
 
 def ReadGpio(pin) :
     process = s.Popen(["/usr/local/bin/gpio", "-g", "read", pin], stdout = s.PIPE)
@@ -97,9 +126,50 @@ def ReadGpio(pin) :
     data = str.replace(data, "\n", "")
     return "1" in data
 
+def unix_time(dt):
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    delta = dt - epoch
+    return delta.total_seconds()
+
+def unix_time_millis(dt):
+    return unix_time(dt) * 1000.0
+
+def arduinoSerial():
+	global motionState, motionTime, lightTimes, lightState, temperature
+	ser = serial.Serial('/dev/ttyUSB0',9600)
+	end = time.time()
+	while 1:
+		input = ser.readline()
+		res = input.split("|")
+		if "1" in res[0]:
+			motionState[4] = 1
+			motionTime[4] = time.time()
+			if (lightState[0]==0):
+				os.system("echo 'rf " + lightRFCodes[0] + " on' | nc localhost 1099")
+				lightState[0]=1
+				lightTimes[0] = time.time()
+			if (lightState[3]==0):
+				os.system("echo 'rf " + lightRFCodes[3] + " on' | nc localhost 1099")
+				lightState[3]=1
+				lightTimes[3] = time.time()
+		else:
+			motionState[4] = 0
+		if "0:0:0:1" in res[1]:
+			motionState[5] = 1
+			motionTime[5] = time.time()
+			os.system("echo 'rf " + lightRFCodes[1] + " on' | nc localhost 1099")
+			lightState[1]=1
+			lightTimes[1] = time.time()
+		else:
+			motionState[5] = 0
+		temperature = res[2]
+		sendState()
 	
 	
 motionState[0] = 0
+
+# check serial ports
+#os.system("ls /dev/tty* > devtty")
 
 # setup netcat
 try:
@@ -129,6 +199,33 @@ except Exception , e:
 # setup server connections
 ws = create_connection("ws://66.57.76.177:9002/ws")
 thread.start_new_thread(getMessages,())
+thread.start_new_thread(arduinoSerial,())
 while 1:
-	time.sleep(0.05)
+	time.sleep(1)
+	curTime = time.time()
+	for i in range(0,numMotionSensors):
+		if (curTime-motionTime[i]>5):
+			if motionState[i]==1:
+				motionState[i]=0
+				sendState()
+	if (curTime-motionTime[5]>300): # piano sensor
+		if (lightState[1]==1):
+			os.system("echo 'rf " + lightRFCodes[1] + " off' | nc localhost 1099")
+			lightState[1]=0
+			sendState()
+	if (curTime-motionTime[4]>300): # desk sensor
+		if (lightState[0]==1):
+			os.system("echo 'rf " + lightRFCodes[0] + " off' | nc localhost 1099")
+			lightState[0]=0
+			sendState()
+		if (lightState[3]==1):
+			os.system("echo 'rf " + lightRFCodes[3] + " off' | nc localhost 1099")
+			lightState[3]=0
+			sendState()
+	if (curTime-motionTime[0]>600 and curTime-motionTime[1]>600 and curTime-motionTime[2]>600 and curTime-motionTime[3]>600 and curTime-motionTime[4]>600):
+		for i in range(0,numLights):
+			os.system("echo 'rf " + lightRFCodes[i] + " off' | nc localhost 1099")
+			lightState[i] = 0
+		for i in range(0,numMotionSensors):
+			motionTime[i] = time.time()
 ws.close()

@@ -20,21 +20,23 @@ $(document).ready(updateWindow);
 // Websocket
 var sock = null;
 var wsuri = "ws://66.57.76.177:9002/ws";
-
+var temperature = "unknown"
 var draw = null;
 var i = 0
 // Lights
-var numLights = 4;
+var numLights = 5;
 var light = new Array()
 var lightBulb = new Array()
 var lightPosition = [[1010,850,0.05,0.05,0.63,0.844]
 					,[151,484,0.03,0.05,0.52,0.144]
 					,[151,247,0.03,0.04,0.755,0.63]
-					,[151,247,0.03,0.04,0.695,0.82]];
+					,[151,247,0.03,0.04,0.695,0.82]
+					,[151,247,0.03,0.04,0.34,0.24]];
 var lightBulbPosition = [[561,523,0.1,0.1,0.625,.81]
 						,[561,523,0.1,0.1,0.49,0.11]
 						,[561,523,0.1,0.1,0.722,0.6]
-						,[561,523,0.1,0.1,0.662,0.79]];
+						,[561,523,0.1,0.1,0.662,0.79]
+						,[561,523,0.1,0.1,0.31,0.215]];
 
 var lightState = new Array(numLights)
 for (i=0; i<numLights; i++) {
@@ -46,12 +48,14 @@ for (i=0; i<numLights; i++) {
 }
 
 // Motion sensors
-var numMotionSensors = 4;
+var numMotionSensors = 6;
 var motionSensor = new Array(numMotionSensors)
-var motionSensorPosition = [[48,48,0.1,0.1,0.655,0.74]  // office
-			,[48,48,0.1,0.1,0.435,0.12]    // piano    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+var motionSensorPosition = [[48,48,0.1,0.1,0.45,0.55]  // ? 
+			,[48,48,0.1,0.1,0.54,0.49]   // ?    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 			,[48,48,0.1,0.1,0.21,0.17]  // kitchen   // original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
-			,[48,48,0.1,0.1,0.28,0.5]]; //  entry   original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.28,0.5] //  entry   original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.655,0.74]    // office    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.435,0.12]];  // piano    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 var motionState = new Array(numMotionSensors)
 for (i=0; i<numMotionSensors; i++) {
 	motionState[i] = 0;
@@ -127,6 +131,7 @@ sock.onmessage = function(e) {
 			}
 		}
 		title.text('last input from: ' + isweb[3])
+		temp.text('current temp: ' + isweb[4] + 'F')
    } else {
 
    }
@@ -227,6 +232,15 @@ light[3].click(function() {
 
 	sendState();
 })
+light[4].click(function() {
+	for (i=0; i<numLights; i++) {
+		lightSwitch[i] = 0;
+	}
+	lightSwitch[4] = 1;
+
+
+	sendState();
+})
 
 
 for (i=0; i<numLights; i++) {
@@ -252,6 +266,15 @@ var title = draw.text('command center')
     .back()
     .fill('#ccc')
     .move('50%', '40%')
+    .font({
+        family: 'Source Sans Pro'
+      , size: 18
+      , anchor: 'middle'
+    })
+var temp = draw.text('current temp' + temperature)
+    .back()
+    .fill('#ccc')
+    .move('70%', '70%')
     .font({
         family: 'Source Sans Pro'
       , size: 18
