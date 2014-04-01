@@ -9,12 +9,12 @@ import serial
 import datetime
 
 numLights = 5;
-numMotionSensors = 6;
+numMotionSensors = 7;
 lightState = [0]*numLights
 motionState = [0]*numMotionSensors
 motionTime = [time.time()]*numMotionSensors
-motionSensorPositionsX = [0.45,0.54,0.21,0.28,0.655,0.435];
-motionSensorPositionsY = [0.55,0.49,0.17,0.5,0.74,0.12];
+motionSensorPositionsX = [0.45,0.54,0.21,0.28,0.655,0.435,.2];
+motionSensorPositionsY = [0.55,0.49,0.17,0.5,0.74,0.12,.21];
 lightTimes = [time.time()]*numLights
 lightRFCodes = ['a1','b1','d1','c1','g1']
 place = "command center"
@@ -157,11 +157,21 @@ def arduinoSerial():
 		if "0:0:0:1" in res[1]:
 			motionState[5] = 1
 			motionTime[5] = time.time()
-			os.system("echo 'rf " + lightRFCodes[1] + " on' | nc localhost 1099")
-			lightState[1]=1
-			lightTimes[1] = time.time()
+			if (lightState[1]==0):
+				os.system("echo 'rf " + lightRFCodes[1] + " on' | nc localhost 1099")
+				lightState[1]=1
+				lightTimes[1] = time.time()
 		else:
 			motionState[5] = 0
+		if "0:0:1:1" in res[1]:
+			motionState[6] = 1
+			motionTime[6] = time.time()
+			if (lightState[4] == 0):
+				os.system("echo 'rf " + lightRFCodes[4] + " on' | nc localhost 1099")
+				lightState[4]=1
+				lightTimes[4] = time.time()
+		else:
+			motionState[6] = 0
 		temperature = res[2]
 		sendState()
 	
@@ -212,6 +222,11 @@ while 1:
 		if (lightState[1]==1):
 			os.system("echo 'rf " + lightRFCodes[1] + " off' | nc localhost 1099")
 			lightState[1]=0
+			sendState()
+	if (curTime-motionTime[6]>300): # kitchen sensor
+		if (lightState[4]==1):
+			os.system("echo 'rf " + lightRFCodes[4] + " off' | nc localhost 1099")
+			lightState[4]=0
 			sendState()
 	if (curTime-motionTime[4]>300): # desk sensor
 		if (lightState[0]==1):

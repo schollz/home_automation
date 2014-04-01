@@ -48,14 +48,15 @@ for (i=0; i<numLights; i++) {
 }
 
 // Motion sensors
-var numMotionSensors = 6;
+var numMotionSensors = 7;
 var motionSensor = new Array(numMotionSensors)
 var motionSensorPosition = [[48,48,0.1,0.1,0.45,0.55]  // ? 
 			,[48,48,0.1,0.1,0.54,0.49]   // ?    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 			,[48,48,0.1,0.1,0.21,0.17]  // kitchen   // original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 			,[48,48,0.1,0.1,0.28,0.5] //  entry   original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 			,[48,48,0.1,0.1,0.655,0.74]    // office    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
-			,[48,48,0.1,0.1,0.435,0.12]];  // piano    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.435,0.12]  // piano    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
+			,[48,48,0.1,0.1,0.2,0.21]];  // kitchen area    original width, original height, scaleX, scaleY, rel. positionX, rel. positionY
 var motionState = new Array(numMotionSensors)
 for (i=0; i<numMotionSensors; i++) {
 	motionState[i] = 0;
