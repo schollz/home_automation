@@ -7,6 +7,18 @@ import socket
 from sys import exit , stdout , stdin
 import serial
 import datetime
+import socket
+import sys
+
+def get_lock(process_name):
+    global lock_socket
+    lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    try:
+        lock_socket.bind('\0' + process_name)
+        print 'I got the lock'
+    except socket.error:
+        print 'lock exists'
+        sys.exit()
 
 numLights = 5;
 numMotionSensors = 7;
@@ -177,6 +189,7 @@ def arduinoSerial():
 	
 	
 motionState[0] = 0
+get_lock('python_server_com')
 
 # check serial ports
 #os.system("ls /dev/tty* > devtty")
@@ -237,7 +250,7 @@ while 1:
 			os.system("echo 'rf " + lightRFCodes[3] + " off' | nc localhost 1099")
 			lightState[3]=0
 			sendState()
-	if (curTime-motionTime[0]>600 and curTime-motionTime[1]>600 and curTime-motionTime[2]>600 and curTime-motionTime[3]>600 and curTime-motionTime[4]>600):
+	if (curTime-motionTime[0]>1800 and curTime-motionTime[1]>1800 and curTime-motionTime[2]>1800 and curTime-motionTime[3]>1800 and curTime-motionTime[4]>1800):
 		for i in range(0,numLights):
 			os.system("echo 'rf " + lightRFCodes[i] + " off' | nc localhost 1099")
 			lightState[i] = 0
